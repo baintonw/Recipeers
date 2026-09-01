@@ -6,7 +6,7 @@ are drafted.
 | Part | File | Status |
 |---|---|---|
 | 0 — Orientation | [`00-orientation.md`](./00-orientation.md) | ✅ drafted |
-| 1 — TypeScript from the ground up | `01-typescript.md` | ⬜ not started |
+| 1 — TypeScript from the ground up | [`01-typescript.md`](./01-typescript.md) | ✅ drafted |
 | 2 — A React refresher | `02-react-refresher.md` | ⬜ not started |
 | 3 — Project setup | `03-project-setup.md` | ⬜ not started |
 | 4 — Modeling the data | `04-data-modeling.md` | ⬜ not started |
