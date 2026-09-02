@@ -1,0 +1,11 @@
+// Cookbook — Prisma schema. Models are added in Part 4.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

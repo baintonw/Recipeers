@@ -8,7 +8,7 @@ are drafted.
 | 0 — Orientation | [`00-orientation.md`](./00-orientation.md) | ✅ drafted |
 | 1 — TypeScript from the ground up | [`01-typescript.md`](./01-typescript.md) | ✅ drafted |
 | 2 — A React refresher | [`02-react-refresher.md`](./02-react-refresher.md) | ✅ drafted |
-| 3 — Project setup | `03-project-setup.md` | ⬜ not started |
+| 3 — Project setup | [`03-project-setup.md`](./03-project-setup.md) | ✅ drafted |
 | 4 — Modeling the data | `04-data-modeling.md` | ⬜ not started |
 | 5 — The GraphQL layer | `05-graphql-layer.md` | ⬜ not started |
 | 6 — Connecting the frontend | `06-frontend.md` | ⬜ not started |
