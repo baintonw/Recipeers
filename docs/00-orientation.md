@@ -37,15 +37,15 @@ minimal so the focus stays on data flow.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Cookbook                         [ Search... ]  [Log in] │
+│  Cookbook                         [ Search... ] [Log in] │
 ├──────────────────────────────────────────────────────────┤
-│  Tags:  ( All ) ( Dinner ) ( Vegan ) ( Quick ) ( Baking ) │
+│  Tags: ( All ) ( Dinner ) ( Vegan ) ( Quick ) ( Baking ) │
 │                                                          │
-│  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐ │
-│  │ Weeknight Chili│  │ Lemon Tart     │  │ Miso Ramen   │ │
-│  │ by Sam · ♥ 12  │  │ by Alex · ♥ 30 │  │ by Sam · ♥ 8 │ │
-│  │ #dinner #quick │  │ #baking        │  │ #dinner      │ │
-│  └────────────────┘  └────────────────┘  └──────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐│
+│  │ Weeknight Chili│  │ Lemon Tart     │  │ Miso Ramen   ││
+│  │ by Sam · ♥ 12  │  │ by Alex · ♥ 30 │  │ by Sam · ♥ 8 ││
+│  │ #dinner #quick │  │ #baking        │  │ #dinner      ││
+│  └────────────────┘  └────────────────┘  └──────────────┘│
 │                                                          │
 │                    [ Load more ]                         │
 └──────────────────────────────────────────────────────────┘
