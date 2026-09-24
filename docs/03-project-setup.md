@@ -87,7 +87,7 @@ The scripts in `package.json`:
 - `npm run lint` — runs `eslint` over the project (Next 16 removed the `next lint` wrapper)
 
 Get in the habit of running `npm run build` before each checkpoint commit — it type-checks the
-whole project, which the dev server only does per-file as you touch things.
+whole project, which the dev server only does per-file as you touch things. // TODO
 
 ---
 
