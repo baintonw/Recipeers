@@ -171,9 +171,10 @@ The cost is that the SDL is no longer something you read in a file — it's gene
 GraphiQL has a schema browser, and in Part 6 GraphQL Code Generator reads the schema straight from
 the running server, so in practice you rarely miss it.
 
-> **Pothos's defaults for nullability.** Pothos flips GraphQL's defaults to something safer:
-> **output fields are non-null** unless you say `nullable: true`, and **arguments and input fields
-> are optional** unless you say `required: true`. You'll see both flags a lot.
+> **Nullability defaults.** Out of the box, Pothos keeps GraphQL's default: every output field is
+> nullable. This tutorial flips that in the builder (§5.4, `defaultFieldNullability: false`) so that
+> **output fields are non-null** unless you say `nullable: true`. **Arguments and input fields are
+> optional** unless you say `required: true`. You'll see both flags a lot.
 
 ---
 
@@ -261,9 +262,14 @@ below the existing `generator client`:
 
 ```prisma
 generator pothos {
-  provider = "prisma-pothos-types"
+  provider          = "prisma-pothos-types"
+  generateDatamodel = true
 }
 ```
+
+`generateDatamodel = true` matters. Without it, the generator writes only a `.d.ts` — the types —
+and the runtime half, `getDatamodel()` (used in §5.4's builder), doesn't exist. TypeScript is happy,
+but Next.js fails with *Module not found: Can't resolve '@pothos/plugin-prisma/generated'*.
 
 Then regenerate:
 
@@ -271,7 +277,7 @@ Then regenerate:
 npx prisma generate
 ```
 
-This writes Pothos's types into `node_modules/@pothos/plugin-prisma/generated`. Like the Prisma
+This writes Pothos's types and datamodel into `node_modules/@pothos/plugin-prisma/generated`. Like the Prisma
 client, it's generated code in `node_modules` — never committed, and rebuilt by every
 `prisma generate` (which `migrate dev` and `migrate reset` both run for you). If you ever see
 Pothos errors claiming a model doesn't exist, a stale generation is the first suspect.
@@ -295,12 +301,15 @@ export type Context = {
 export const builder = new SchemaBuilder<{
   PrismaTypes: PrismaTypes;
   Context: Context;
+  // Output fields are non-null unless marked `nullable: true` (see the note in §5.2).
+  DefaultFieldNullability: false;
   Scalars: {
     ID: { Input: string; Output: string };
     DateTime: { Input: Date; Output: Date };
   };
 }>({
   plugins: [PrismaPlugin],
+  defaultFieldNullability: false,
   prisma: {
     client: prisma,
     dmmf: getDatamodel(),
@@ -320,7 +329,8 @@ builder.scalarType("DateTime", {
 });
 
 builder.queryType({});
-builder.mutationType({});
+// Uncomment in §5.8 — GraphQL rejects a Mutation type with no fields.
+// builder.mutationType({});
 ```
 
 The generic argument to `SchemaBuilder` is where the type safety comes from — it's a single object
@@ -329,6 +339,10 @@ type describing everything the builder needs to know:
 - **`PrismaTypes`** — the generated model types, so `prismaObject("Recipe", …)` knows what
   `Recipe` has.
 - **`Context`** — the shape of the per-request context. Every resolver's `ctx` is typed as this.
+- **`DefaultFieldNullability: false`** — together with the `defaultFieldNullability: false` option
+  below, makes output fields non-null by default. Pothos's own default is nullable, which would mean
+  writing `nullable: false` on nearly every field. The type and the option have to agree: the type
+  is what TypeScript checks against, the option is what goes into the actual schema.
 - **`Scalars`** — the TypeScript types behind each scalar. By default Pothos types incoming `ID`s as
   `string | number` (GraphQL allows both on the wire); since every ID in this schema is a `cuid()`
   string, narrowing it to `string` saves a `String(args.id)` in every resolver. `DateTime` is a
@@ -342,6 +356,10 @@ of your data model — the plugin reads it to translate GraphQL selections into 
 Finally, `queryType({})` and `mutationType({})` create the two root types *empty*. Each type file
 adds its own fields to them with `builder.queryFields` / `builder.mutationFields`, so no single
 file has to know about every operation.
+
+`mutationType` starts commented out because GraphQL doesn't allow an object type with zero fields.
+`Query` gets its first fields in §5.6, but `Mutation` stays empty until §5.8. Leave it in, and every
+request fails with *Type Mutation must define one or more fields*.
 
 ### The context
 
@@ -679,6 +697,9 @@ Three mutations: `createRecipe`, `updateRecipe`, `deleteRecipe`. They all go in
 `graphql/types/recipe-mutations.ts`, and they need two things that don't exist yet: an input type
 and some validation.
 
+First, uncomment `builder.mutationType({});` in `graphql/builder.ts`. The mutations you're about to
+write give it the fields it needs.
+
 ### Input types
 
 A mutation that creates a recipe with its steps, ingredients, and tags has a lot of arguments.
@@ -797,7 +818,8 @@ function validateRecipeInput(input: RecipeInputData) {
 
 Three small functions turn the validated input into the nested-write shapes Prisma expects — the
 same shapes `seed.ts` used by hand in Part 4, with `connectOrCreate` swapped in for "look it up by
-name, create it if it's new":
+name, create it if it's new". Add them to `recipe-mutations.ts`, right below `validateRecipeInput`.
+They read its return type, and the mutations below them will call them:
 
 ```ts
 type ValidRecipe = ReturnType<typeof validateRecipeInput>;
@@ -1055,11 +1077,69 @@ Before any frontend exists, run every operation by hand. This is the habit worth
 the UI misbehaves in Part 6, you'll want to know whether the API does the right thing on its own,
 and GraphiQL answers that in seconds.
 
-With `npm run dev` running, open <http://localhost:3000/api/graphql> and work through these.
+You've been doing this since §5.6. This section turns it into a full test of the API: every query
+and mutation, the happy path and the failures.
 
-**1. Variables.** Rather than pasting values into the query string, declare them as typed
-**variables** and supply them in GraphiQL's *Variables* pane. This is how every query in Part 6 will
-be written:
+### A tour of GraphiQL
+
+With `npm run dev` running, open <http://localhost:3000/api/graphql> in a browser. Yoga serves
+GraphiQL there whenever a *browser* visits the URL. The same URL answers `POST` requests from
+code, and that's what the React app will use in Part 6.
+
+GraphiQL is a **client**. It plays the part the frontend will play later: it sends a GraphQL
+document to the server and shows you the JSON that comes back. The screen has four areas:
+
+```
+┌──────────────────────────────┬──────────────────────────────┐
+│ ① Query editor           [▶] │ ③ Response                   │
+│                              │                              │
+│ query RecipeDetail($id: ID!) │ {                            │
+│ {  recipe(id: $id) { … } }   │   "data": { "recipe": … }    │
+│                              │ }                            │
+├──────────────────────────────┤                              │
+│ ② Variables │ Headers        │                              │
+│ { "id": "cmg…" }             │                              │
+└──────────────────────────────┴──────────────────────────────┘
+  ④ Sidebar (left edge): 📖 Docs · 🕘 History
+```
+
+1. **Query editor.** The GraphQL document goes here: a `query` or `mutation`. Paste the blocks in
+   this section **exactly as written**. They're complete operations. Then press **▶** (or
+   **Cmd/Ctrl + Enter**) to run.
+2. **Variables pane.** The bar under the editor, with *Variables* and *Headers* tabs. It's often
+   collapsed, so click *Variables* to open it. The JSON blocks below go here: an object whose keys
+   match the `$variables` declared in the query, without the `$`. GraphiQL sends it alongside
+   the query.
+3. **Response.** The server's JSON. Success is under `"data"`. Problems are under `"errors"`, each
+   with a `message` and, for errors you threw deliberately, an `extensions.code` (§5.9).
+4. **Sidebar.** *Docs* is the schema browser: every type and field, generated from your Pothos code.
+   Use it to check what a field is called or what an input expects. *History* holds everything
+   you've run.
+
+Two habits make this smoother:
+
+- **Use a tab per operation.** The **+** above the editor opens a new tab, each with its own query
+  and variables. If one editor holds several named operations, ▶ asks which to run.
+- **Let it autocomplete.** Start typing a field name, or press **Ctrl + Space**, and GraphiQL
+  suggests only fields that exist on that type. Typos are underlined in red before you send
+  anything. That's the schema at work.
+
+Each exercise below follows the same pattern: paste the operation into the editor, paste the JSON
+into Variables, run, and compare the response with what's described.
+
+### 1. Read one recipe, using variables
+
+**What you're testing:** `Query.recipe` and its relations. You're also practicing **variables**,
+which is how every query in Part 6 will be written. Values travel separately from the query text,
+so the query string never changes.
+
+First you need a real ID. In a new tab, run:
+
+```graphql
+{ recipes { id title } }
+```
+
+Copy one of the `id` values (they look like `cmg…`). Then, in another tab, put this in the editor:
 
 ```graphql
 query RecipeDetail($id: ID!) {
@@ -1071,14 +1151,28 @@ query RecipeDetail($id: ID!) {
 }
 ```
 
+and this in Variables, with your ID pasted in:
+
 ```json
 { "id": "PASTE-ID-HERE" }
 ```
 
-`RecipeDetail` is the **operation name** — optional, but it shows up in logs and dev tools, and
-Part 6's code generator names types after it.
+**Expect:** the recipe's title, its author, and its steps numbered from 1.
 
-**2. Create a recipe.**
+- `RecipeDetail` is the **operation name**. It's optional, but it shows up in logs and dev tools,
+  and Part 6's code generator names types after it.
+- Leave Variables empty and you get *Variable "$id" of required type "ID!" was not provided*. The
+  `!` makes the variable mandatory, so the query is rejected before any resolver runs.
+- Change one character of the ID and you get `"recipe": null`. A lookup that finds nothing isn't an
+  error, which is why `recipe` was declared `nullable: true` in §5.6.
+
+### 2. Create a recipe
+
+**What you're testing:** `createRecipe` end to end. That includes the input type, validation,
+steps numbered from their list position, tags normalized, and ingredients connected or created by
+name.
+
+Editor:
 
 ```graphql
 mutation CreateRecipe($input: RecipeInput!) {
@@ -1092,6 +1186,8 @@ mutation CreateRecipe($input: RecipeInput!) {
   }
 }
 ```
+
+Variables:
 
 ```json
 {
@@ -1108,21 +1204,48 @@ mutation CreateRecipe($input: RecipeInput!) {
 }
 ```
 
-Check: steps numbered 1–3, tags lowercased, author is Sam. In Prisma Studio, `Lemon` is a new
-`Ingredient` but `Onion` isn't — it was connected to the existing row from the seed. (It's a strange
-tart. It proves the point.)
+The whole recipe travels as **one variable**, `$input`, shaped like the `RecipeInput` type from
+§5.8. Note that `unit` is written as a plain string in JSON. GraphQL converts it to the `Unit` enum.
 
-**3. Break the validation.** Rerun with each of these, one at a time, and read the `errors`
-array — each should be a `BAD_USER_INPUT` with a helpful message:
+**Expect:**
 
-- `"title": "   "`
-- `"steps": []`
-- a `quantity` of `-1`
-- `"Lemon"` listed twice
-- `"unit": "HANDFUL"` — notice this one is rejected by GraphQL itself, before your resolver runs,
-  because `HANDFUL` isn't in the `Unit` enum.
+- steps with `order` 1, 2, 3, even though you sent only text;
+- tags `baking` and `dessert`, lowercased;
+- author Sam, from the stub context in §5.4;
+- an `id`. **Copy it.** Exercises 4 and 5 need it.
 
-**4. Update it.** Using the new recipe's ID, remove the onion and fix the steps:
+Then check the database. Run `npx prisma studio` in a second terminal and open the `Ingredient`
+table. `Lemon` is a new row, but there's still only one `Onion`: it was connected to the existing
+row from the seed, not duplicated. (It's a strange tart. It proves the point.)
+
+### 3. Break the validation
+
+**What you're testing:** that bad input produces a helpful error rather than a crash or a bad row.
+
+Keep the `CreateRecipe` mutation in the editor. In Variables, change **one thing at a time** from
+the valid input above, run, read the `errors` array, then undo it before trying the next:
+
+| Change in Variables | Expected error |
+|---|---|
+| `"title": "   "` | `BAD_USER_INPUT`, "Title is required" |
+| `"steps": []` | `BAD_USER_INPUT`, "Add at least one step" |
+| a `"quantity"` of `-1` | `BAD_USER_INPUT`, "Quantity for … must be positive" |
+| add a second `{ "name": "Lemon", … }` | `BAD_USER_INPUT`, "… is listed more than once" |
+| `"unit": "HANDFUL"` | a GraphQL error about `Unit` (no `BAD_USER_INPUT`) |
+
+The last one is different. `HANDFUL` isn't one of the `Unit` enum values, so GraphQL rejects the
+variables **before your resolver runs**. The first four got through GraphQL's type check, and your
+`validateRecipeInput` caught them. That's the split from §5.8: GraphQL checks the *shape*, and your
+code checks the *meaning*.
+
+None of these should create a recipe. Rerun `{ recipes { id title } }` to confirm.
+
+### 4. Update it
+
+**What you're testing:** `updateRecipe`, a full replace. Whatever you send becomes the
+recipe's complete content.
+
+Editor:
 
 ```graphql
 mutation UpdateRecipe($id: ID!, $input: RecipeInput!) {
@@ -1135,10 +1258,38 @@ mutation UpdateRecipe($id: ID!, $input: RecipeInput!) {
 }
 ```
 
-Send the same input as before minus the onion, with a step added. The steps should be renumbered
-from 1, and `updatedAt` should have moved.
+Variables: the ID from exercise 2, plus the same input with the onion removed and a step added:
 
-**5. Delete it**, then try to delete it again:
+```json
+{
+  "id": "PASTE-LEMON-TART-ID-HERE",
+  "input": {
+    "title": "Lemon Tart",
+    "description": "Sharp, sweet, and worth the effort.",
+    "steps": [
+      "Blind-bake the pastry case.",
+      "Whisk the filling.",
+      "Bake until just set.",
+      "Chill for two hours."
+    ],
+    "ingredients": [{ "name": "Lemon", "quantity": 4, "unit": "PIECE" }],
+    "tags": ["baking", "dessert"]
+  }
+}
+```
+
+There are two variables this time, so the JSON object has two keys.
+
+**Expect:** four steps numbered 1–4, only `Lemon` in the ingredients, and an `updatedAt` later than
+before. Because it's a full replace, anything you leave out of `input` is removed. Try dropping a
+tag to see that.
+
+### 5. Delete it, twice
+
+**What you're testing:** `deleteRecipe`, and that a missing recipe gives a clean `NOT_FOUND`
+rather than a crash.
+
+Editor:
 
 ```graphql
 mutation DeleteRecipe($id: ID!) {
@@ -1146,11 +1297,22 @@ mutation DeleteRecipe($id: ID!) {
 }
 ```
 
-The first returns the ID. The second returns a `NOT_FOUND` error — not `"Unexpected error."`.
+Variables: `{ "id": "PASTE-LEMON-TART-ID-HERE" }`
 
-**6. Watch the query count.** Run the big nested query from §5.7 and count the SQL lines logged in
-the terminal. Then create two or three more recipes and run it again. The number of queries
-shouldn't change.
+`deleteRecipe` returns a bare `ID`, not an object, so there are no `{ … }` fields to select.
+
+**Expect:** the first run returns the ID. Run it again unchanged, and the second returns an error
+with `extensions.code: "NOT_FOUND"`, not `"Unexpected error."`. That's §5.9's P2025 mapping
+working.
+
+### 6. Watch the query count
+
+**What you're testing:** that the Prisma plugin avoids N+1 queries (§5.7).
+
+Run the big nested query from §5.7, then look at the **terminal running `npm run dev`**, not the
+browser. Count the `prisma:query` lines logged for that request. Create two or three more recipes
+with exercise 2 (change the titles) and run it again. The number of queries shouldn't change:
+cost follows the shape of the query, not the number of rows.
 
 When you're done, `npx prisma migrate reset` puts the database back to the seed.
 
@@ -1173,7 +1335,9 @@ graphql/
     └── user.ts
 ```
 
-Plus `app/api/graphql/route.ts`, and the `generator pothos` block in `prisma/schema.prisma`.
+Plus `app/api/graphql/route.ts` (inside the Next.js `app/` folder, so it's served at
+`/api/graphql`), and the `generator pothos` block, with `generateDatamodel = true`, in
+`prisma/schema.prisma`.
 
 You should be able to:
 

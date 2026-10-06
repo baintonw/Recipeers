@@ -11,6 +11,7 @@ are drafted.
 | 3 — Project setup | [`03-project-setup.md`](./03-project-setup.md) | ✅ drafted |
 | 4 — Modeling the data | [`04-data-modeling.md`](./04-data-modeling.md) | ✅ drafted |
 | 5 — The GraphQL layer | [`05-graphql-layer.md`](./05-graphql-layer.md) | ✅ drafted |
+| ↳ Companion: the backend, big picture | [`backend-big-picture.md`](./backend-big-picture.md) | ✅ drafted |
 | 6 — Connecting the frontend | `06-frontend.md` | ⬜ not started |
 | 7 — Authentication & authorization | `07-auth.md` | ⬜ not started |
 | 8 — Filling out the app | `08-filling-out.md` | ⬜ not started |

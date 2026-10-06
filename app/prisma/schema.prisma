@@ -5,6 +5,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator pothos {
+  provider          = "prisma-pothos-types"
+  // Also emit generated.js so getDatamodel() exists at runtime, not just in the types.
+  generateDatamodel = true
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
