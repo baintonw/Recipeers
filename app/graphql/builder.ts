@@ -40,5 +40,4 @@ builder.scalarType("DateTime", {
 });
 
 builder.queryType({});
-// Uncomment in §5.8 — GraphQL rejects a Mutation type with no fields.
-// builder.mutationType({});
+builder.mutationType({});
