@@ -329,6 +329,7 @@ types but not the runtime code, so `tsc` passed and the server still couldn't st
 | 404 at `/api/graphql` | Next.js | `route.ts` not under `app/app/api/graphql/` |
 | `Module not found` / `Cannot find module '@prisma/client'` | Generated code | Run `npx prisma generate`; check generator config |
 | Error mentioning a type "not implemented" or "must define one or more fields" | Pothos / schema | Missing import in `schema.ts`, or an empty root type |
+| `PothosSchemaError: Duplicate field …` right after editing a file | Pothos / dev server | Hot reload registered a type twice; restart `npm run dev` |
 | GraphiQL shows a validation error before anything runs | GraphQL | The query asks for a field the schema doesn't have |
 | `"Unexpected error."` | Your resolver or below | Look at the dev server terminal for the real error |
 | `Can't reach database server` | Postgres / Docker | Container not running |

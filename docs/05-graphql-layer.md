@@ -404,6 +404,11 @@ types and fields as a side effect. `toSchema()` then assembles everything regist
 `GraphQLSchema`. That's why the imports must come **before** `toSchema()`: a type file imported
 after it would register into a schema that's already been built.
 
+> **Restart after editing `graphql/`.** Next.js hot-reloads the file you edited, but not
+> `builder.ts`. The edited type file runs again against the *same* builder, which registers its
+> types a second time, and every request fails with something like `PothosSchemaError: Duplicate
+> field id on User`. Restart `npm run dev` after changing anything in `graphql/`.
+
 Create the four files under `graphql/types/` empty for now, so the imports resolve. The next
 sections fill them in.
 
