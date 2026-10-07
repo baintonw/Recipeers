@@ -6,19 +6,26 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "codegen": "graphql-codegen",
+    "codegen:watch": "graphql-codegen --watch"
   },
   "dependencies": {
     "@pothos/core": "^4.15.1",
     "@pothos/plugin-prisma": "^4.17.0",
     "@prisma/client": "^6.19.3",
+    "@urql/next": "^2.0.1",
     "graphql": "^16.14.2",
     "graphql-yoga": "^5.24.1",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "urql": "^5.0.4"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^7.4.5",
+    "@graphql-codegen/client-preset": "^6.2.2",
+    "@parcel/watcher": "^2.6.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
