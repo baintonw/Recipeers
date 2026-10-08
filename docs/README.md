@@ -17,6 +17,9 @@ are drafted.
 | 8 — Filling out the app | `08-filling-out.md` | ⬜ not started |
 | 9 — Further reading | `09-further-reading.md` | ⬜ not started |
 
+Day to day: [`pausing-and-resuming.md`](./pausing-and-resuming.md) has the commands to stop and
+restart Docker, Postgres, and the dev servers between sessions.
+
 ## Code and checkpoints
 
 From Part 3 onward, the reference app is built incrementally in `../app/` (a single Next.js

@@ -47,3 +47,100 @@ a {
     color-scheme: dark;
   }
 }
+
+/* Cookbook (Part 6) — just enough layout to be readable. */
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  font-weight: 600;
+}
+
+.site-main {
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.site-main a {
+  text-decoration: underline;
+}
+
+.recipe-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tags {
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0.7;
+}
+
+.recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recipe-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.recipe-columns ul,
+.recipe-columns ol {
+  padding-left: 1.25rem;
+}
+
+.recipe-form,
+.recipe-form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recipe-form fieldset {
+  padding: 0.75rem;
+}
+
+.recipe-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recipe-form input,
+.recipe-form textarea,
+.recipe-form select,
+.recipe-form button,
+.favorite button {
+  font: inherit;
+  padding: 0.375rem 0.5rem;
+}
+
+.ingredient-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-error {
+  color: #c62828;
+}
