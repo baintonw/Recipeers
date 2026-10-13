@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useQuery } from "@urql/next";
 import { graphql } from "@/lib/generated";
+import { FavoriteButton } from "./favorite-button";
+
 
 const RecipeDetailQuery = graphql(`
   query RecipeDetail($id: ID!) {
@@ -57,11 +59,14 @@ export function RecipeDetail({ id }: { id: string }) {
   return (
     <article className="recipe">
       <Link href="/">← Back</Link>
-      <h1>{recipe.title}</h1>
+      <h1>
+        {recipe.title} <FavoriteButton initialCount={recipe.favoriteCount} />
+      </h1>
       <p>
-        by {recipe.author.name} · ♥ {recipe.favoriteCount} · updated{" "}
+        by {recipe.author.name} · updated{" "}
         {new Date(recipe.updatedAt).toLocaleDateString()}
       </p>
+
       <p className="tags">
         {recipe.tags.map((tag) => (
           <span key={tag.id}>#{tag.name}</span>
